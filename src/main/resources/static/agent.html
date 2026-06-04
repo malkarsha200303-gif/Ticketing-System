@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Agent Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      background: #2d3748;
+      color: white;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 { font-size: 22px; }
+
+    .header span {
+      background: #4299e1;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+    }
+
+    /* Stats */
+    .stats {
+      display: flex;
+      gap: 20px;
+      padding: 30px 40px 10px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px 30px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      min-width: 140px;
+    }
+
+    .stat-card h2 {
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .stat-card p { color: #718096; font-size: 13px; margin-top: 4px; }
+
+    .open-count   { color: #e53e3e; }
+    .resolved-count { color: #38a169; }
+    .total-count  { color: #3182ce; }
+
+    /* Filter Buttons */
+    .filters {
+      padding: 20px 40px 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .filter-btn {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .filter-btn.active, .filter-btn:hover { color: white; }
+    #btn-all      { background: #ebf8ff; color: #2b6cb0; }
+    #btn-all.active { background: #3182ce; }
+    #btn-open     { background: #fff5f5; color: #c53030; }
+    #btn-open.active { background: #e53e3e; }
+    #btn-resolved { background: #f0fff4; color: #276749; }
+    #btn-resolved.active { background: #38a169; }
+
+    /* Table */
+    .table-container {
+      padding: 10px 40px 40px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    thead {
+      background: #2d3748;
+      color: white;
+    }
+
+    th, td {
+      padding: 14px 18px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    tr:not(:last-child) td { border-bottom: 1px solid #e2e8f0; }
+    tr:hover td { background: #f7fafc; }
+
+    /* Status Badge */
+    .badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-open     { background: #fff5f5; color: #c53030; }
+    .badge-resolved { background: #f0fff4; color: #276749; }
+
+    /* Resolve Button */
+    .resolve-btn {
+      padding: 7px 16px;
+      background: #48bb78;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .resolve-btn:hover { background: #38a169; }
+    .resolve-btn:disabled {
+      background: #cbd5e0;
+      cursor: not-allowed;
+    }
+
+    /* Empty State */
+    .empty {
+      text-align: center;
+      padding: 60px;
+      color: #a0aec0;
+      font-size: 16px;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #2d3748;
+      color: white;
+      padding: 14px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+      z-index: 999;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .toast.show { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>🛠️ Agent Dashboard</h1>
+  <span>Support Team</span>
+</div>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat-card">
+    <h2 class="total-count" id="totalCount">0</h2>
+    <p>Total Tickets</p>
+  </div>
+  <div class="stat-card">
+    <h2 class="open-count" id="openCount">0</h2>
+    <p>Open</p>
+  </div>
+  <div class="stat-card">
+    <h2 class="resolved-count" id="resolvedCount">0</h2>
+    <p>Resolved</p>
+  </div>
+</div>
+
+<!-- Filter Buttons -->
+<div class="filters">
+  <button class="filter-btn active" id="btn-all"      onclick="filterTickets('all')">All Tickets</button>
+  <button class="filter-btn"        id="btn-open"     onclick="filterTickets('open')">🔴 Open</button>
+  <button class="filter-btn"        id="btn-resolved" onclick="filterTickets('resolved')">🟢 Resolved</button>
+</div>
+
+<!-- Table -->
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Ticket No</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Subject</th>
+        <th>Description</th>
+        <th>Status</th>
+        <th>Created At</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="ticketTableBody">
+      <tr><td colspan="8" class="empty">Loading tickets...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let allTickets = [];
+  let currentFilter = 'all';
+
+  // Load all tickets on page load
+  window.onload = function() {
+    loadTickets();
+  };
+
+  async function loadTickets() {
+    try {
+      const response = await fetch('http://localhost:8080/api/tickets');
+      allTickets = await response.json();
+      updateStats();
+      renderTable(allTickets);
+    } catch (error) {
+      document.getElementById('ticketTableBody').innerHTML =
+        '<tr><td colspan="8" class="empty">⚠️ Could not load tickets. Is the backend running?</td></tr>';
+    }
+  }
+
+  function updateStats() {
+    const open     = allTickets.filter(t => t.status === 'OPEN').length;
+    const resolved = allTickets.filter(t => t.status === 'RESOLVED').length;
+    document.getElementById('totalCount').innerText    = allTickets.length;
+    document.getElementById('openCount').innerText     = open;
+    document.getElementById('resolvedCount').innerText = resolved;
+  }
+
+  function filterTickets(filter) {
+    currentFilter = filter;
+
+    // Update active button
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-' + filter).classList.add('active');
+
+    if (filter === 'all')      renderTable(allTickets);
+    if (filter === 'open')     renderTable(allTickets.filter(t => t.status === 'OPEN'));
+    if (filter === 'resolved') renderTable(allTickets.filter(t => t.status === 'RESOLVED'));
+  }
+
+  function renderTable(tickets) {
+    const tbody = document.getElementById('ticketTableBody');
+
+    if (tickets.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty">No tickets found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = tickets.map(ticket => `
+      <tr id="row-${ticket.id}">
+        <td><strong>${ticket.ticketNumber}</strong></td>
+        <td>${ticket.userName}</td>
+        <td>${ticket.userEmail}</td>
+        <td>${ticket.subject}</td>
+        <td style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
+            title="${ticket.description}">${ticket.description}</td>
+        <td>
+          <span class="badge ${ticket.status === 'OPEN' ? 'badge-open' : 'badge-resolved'}">
+            ${ticket.status}
+          </span>
+        </td>
+        <td>${formatDate(ticket.createdAt)}</td>
+        <td>
+          <button
+            class="resolve-btn"
+            id="btn-${ticket.id}"
+            onclick="resolveTicket(${ticket.id})"
+            ${ticket.status === 'RESOLVED' ? 'disabled' : ''}>
+            ${ticket.status === 'RESOLVED' ? '✅ Done' : 'Resolve'}
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  async function resolveTicket(id) {
+    const btn = document.getElementById('btn-' + id);
+    btn.innerText = 'Resolving...';
+    btn.disabled = true;
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/tickets/${id}/resolve`, {
+        method: 'PUT'
+      });
+
+      if (response.ok) {
+        // Update local data
+        const ticket = allTickets.find(t => t.id === id);
+        if (ticket) ticket.status = 'RESOLVED';
+
+        updateStats();
+        filterTickets(currentFilter);
+        showToast('✅ Ticket resolved! Email sent to user.');
+      } else {
+        btn.innerText = 'Resolve';
+        btn.disabled = false;
+        showToast('⚠️ Failed to resolve ticket.');
+      }
+    } catch (error) {
+      btn.innerText = 'Resolve';
+      btn.disabled = false;
+      showToast('⚠️ Error connecting to server.');
+    }
+  }
+
+  function formatDate(dateInput) {
+	    if (!dateInput) return 'N/A';
+
+	    let date;
+
+	    // If it's an array → [2026, 6, 3, 21, 39, 50]
+	    if (Array.isArray(dateInput)) {
+	      const [y, mo, d, h = 0, m = 0, s = 0] = dateInput;
+	      date = new Date(y, mo - 1, d, h, m, s);
+	    }
+	    // If it's a string → "2026-06-03T21:39:50"
+	    else if (typeof dateInput === 'string') {
+	      date = new Date(dateInput);
+	    }
+	    // Already a number (timestamp)
+	    else {
+	      date = new Date(dateInput);
+	    }
+
+	    if (isNaN(date)) return 'N/A';
+
+	    return date.toLocaleString('en-IN', {
+	      day: '2-digit',
+	      month: 'short',
+	      year: 'numeric',
+	      hour: '2-digit',
+	      minute: '2-digit'
+	    });
+	  }
+
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.innerText = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+</script>
+
+</body>
+</html>

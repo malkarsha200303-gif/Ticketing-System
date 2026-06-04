@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Submit a Complaint</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 500px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2d3748;
+      margin-bottom: 8px;
+      font-size: 24px;
+    }
+
+    p.subtitle {
+      text-align: center;
+      color: #718096;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: #4a5568;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 20px;
+      outline: none;
+      transition: border 0.3s;
+    }
+
+    input:focus, textarea:focus {
+      border-color: #4299e1;
+    }
+
+    textarea {
+      height: 120px;
+      resize: vertical;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #4299e1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover { background: #3182ce; }
+
+    /* Success Box */
+    .success-box {
+      display: none;
+      background: #f0fff4;
+      border: 1px solid #68d391;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .success-box h2 {
+      color: #276749;
+      margin-bottom: 8px;
+    }
+
+    .success-box p {
+      color: #2f855a;
+      font-size: 14px;
+    }
+
+    .ticket-number {
+      font-size: 22px;
+      font-weight: bold;
+      color: #2b6cb0;
+      margin: 10px 0;
+    }
+
+    /* Error Box */
+    .error-box {
+      display: none;
+      background: #fff5f5;
+      border: 1px solid #fc8181;
+      border-radius: 8px;
+      padding: 14px;
+      text-align: center;
+      color: #c53030;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎫 Submit a Complaint</h1>
+  <p class="subtitle">Fill the form below and we'll create a support ticket for you</p>
+
+  <div id="form-section">
+    <label>Your Name</label>
+    <input type="text" id="userName" placeholder="Enter your full name" />
+
+    <label>Your Email</label>
+    <input type="email" id="userEmail" placeholder="Enter your email" />
+
+    <label>Subject</label>
+    <input type="text" id="subject" placeholder="Brief title of your problem" />
+
+    <label>Description</label>
+    <textarea id="description" placeholder="Describe your problem in detail..."></textarea>
+
+    <button onclick="submitTicket()">Submit Complaint</button>
+
+    <div class="error-box" id="errorBox">
+      ⚠️ Something went wrong. Please try again.
+    </div>
+  </div>
+
+  <!-- Success Message -->
+  <div class="success-box" id="successBox">
+    <h2>✅ Ticket Created!</h2>
+    <p>Your complaint has been received. Your ticket number is:</p>
+    <div class="ticket-number" id="ticketNumber"></div>
+    <p>Our support team will contact you at <strong id="confirmedEmail"></strong></p>
+    <br/>
+    <button onclick="resetForm()" style="background:#48bb78;">Submit Another Complaint</button>
+  </div>
+</div>
+
+<script>
+  async function submitTicket() {
+    const userName    = document.getElementById('userName').value.trim();
+    const userEmail   = document.getElementById('userEmail').value.trim();
+    const subject     = document.getElementById('subject').value.trim();
+    const description = document.getElementById('description').value.trim();
+
+    // Basic validation
+    if (!userName || !userEmail || !subject || !description) {
+      alert('Please fill in all fields!');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:8080/api/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userName, userEmail, subject, description })
+      });
+
+      if (response.ok) {
+        const ticket = await response.json();
+
+        // Show success
+        document.getElementById('form-section').style.display = 'none';
+        document.getElementById('successBox').style.display = 'block';
+        document.getElementById('ticketNumber').innerText = ticket.ticketNumber;
+        document.getElementById('confirmedEmail').innerText = ticket.userEmail;
+
+      } else {
+        document.getElementById('errorBox').style.display = 'block';
+      }
+
+    } catch (error) {
+      document.getElementById('errorBox').style.display = 'block';
+    }
+  }
+
+  function resetForm() {
+    document.getElementById('userName').value = '';
+    document.getElementById('userEmail').value = '';
+    document.getElementById('subject').value = '';
+    document.getElementById('description').value = '';
+    document.getElementById('form-section').style.display = 'block';
+    document.getElementById('successBox').style.display = 'none';
+    document.getElementById('errorBox').style.display = 'none';
+  }
+</script>
+
+</body>
+</html>
